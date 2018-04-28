@@ -1,47 +1,10 @@
-#[macro_use]
-extern crate nom;
+extern crate l_mri;
+extern crate csv;
 
 use std::env;
 use std::io::{Read, Write};
 use std::fs;
 use std::path::Path;
-use nom::*;
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-struct Header {
-    count: u32,
-}
-
-named!(header<Header>,
-       do_parse!(
-                        tag!(b"LNK\x00")    >>
-            count:      le_u32              >>
-            padding:    take!(8)            >>
-            (Header {
-                count,
-            })
-      )
-);
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-struct FileMetadata {
-    offset: u32,
-    x: u32,
-    name: String,
-}
-
-named!(file_metadata<FileMetadata>,
-       do_parse!(
-           offset:      le_u32      >>
-           x:           le_u32      >>
-           name:        take!(24)   >>
-           (FileMetadata {
-               offset,
-               x,
-               name: String::from_utf8_lossy(name).trim_right_matches('\x00').to_string(),
-           })
-        )
-);
 
 fn main() {
     let args: Vec<_> = env::args().collect();
@@ -54,14 +17,18 @@ fn main() {
     fs::File::open(&dat).unwrap().read_to_end(&mut buf).unwrap();
 
     let buf = &buf;
-    let (mut buf, hdr) = header(buf).unwrap();
+    let (mut buf, hdr) = l_mri::header(buf).unwrap();
     println!("Parsing {} files...", hdr.count);
 
     let metadata: Vec<_> = (0 .. hdr.count).map(|_| {
-        let (nbuf, fm) = file_metadata(buf).unwrap();
+        let (nbuf, fm) = l_mri::metadata(buf).unwrap();
         buf = nbuf;
         fm
     }).collect();
+
+    let path = output_dir.join("metadata.csv");
+    let file = fs::File::create(path).unwrap();
+    let mut metadata_writer = csv::Writer::from_writer(file);
 
     for (i, file) in metadata.iter().enumerate() {
         let offset = file.offset as usize;
@@ -75,5 +42,10 @@ fn main() {
         println!("Writing {}, size {}...", path.display(), end - offset);
         let mut file = fs::File::create(path).unwrap();
         file.write_all(&buf[offset .. end]).unwrap();
+
+        metadata_writer.write_record(&[metadata[i].name.clone(), metadata[i].x.to_string()]).unwrap();
     }
+
+    println!("Flushing metadata...");
+    metadata_writer.flush().unwrap();
 }
