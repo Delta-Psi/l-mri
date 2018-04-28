@@ -10,7 +10,6 @@ use byteorder::{LittleEndian, WriteBytesExt};
 
 struct FileData {
     filename: String,
-    x: u32,
     data: Vec<u8>,
 }
 
@@ -33,7 +32,6 @@ fn main() {
 
         let filename = &record[0];
         assert!(filename.len() <= 24);
-        let x = record[1].parse::<u32>().unwrap();
         let path = metadata_path.with_file_name(filename);
         println!("Reading {:?}...", path);
 
@@ -42,7 +40,6 @@ fn main() {
 
         files.push(FileData {
             filename: filename.to_string(),
-            x,
             data,
         });
     }
@@ -55,7 +52,7 @@ fn main() {
     let mut offset: usize = 0;
     for file in files.iter() {
         output.write_u32::<LittleEndian>(offset as u32).unwrap();
-        output.write_u32::<LittleEndian>(file.x).unwrap();
+        output.write_u32::<LittleEndian>(file.data.len() as u32 * 2).unwrap();
         let mut filename_data = file.filename.clone().into_bytes();
         while filename_data.len() < 24 {
             filename_data.push(0);

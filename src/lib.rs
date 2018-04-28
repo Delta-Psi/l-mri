@@ -22,18 +22,18 @@ named!(pub header<Header>,
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Metadata {
     pub offset: u32,
-    pub x: u32,
+    pub size: u32,
     pub name: String,
 }
 
 named!(pub metadata<Metadata>,
        do_parse!(
            offset:      le_u32      >>
-           x:           le_u32      >>
+           size:        le_u32      >>
            name:        take!(24)   >>
            (Metadata {
                offset,
-               x,
+               size: size/2,
                name: String::from_utf8_lossy(name).trim_right_matches('\x00').to_string(),
            })
         )

@@ -32,18 +32,14 @@ fn main() {
 
     for (i, file) in metadata.iter().enumerate() {
         let offset = file.offset as usize;
-        let end = if i == metadata.len()-1 {
-            buf.len()
-        } else {
-            metadata[i+1].offset as usize
-        };
+        let end = offset + (file.size as usize);
         
         let path = output_dir.join(&file.name);
         println!("Writing {}, size {}...", path.display(), end - offset);
         let mut file = fs::File::create(path).unwrap();
         file.write_all(&buf[offset .. end]).unwrap();
 
-        metadata_writer.write_record(&[metadata[i].name.clone(), metadata[i].x.to_string()]).unwrap();
+        metadata_writer.write_record(&[metadata[i].name.clone()]).unwrap();
     }
 
     println!("Flushing metadata...");
