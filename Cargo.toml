@@ -3,6 +3,14 @@ name = "l-mri"
 version = "0.1.0"
 authors = ["Difarem <difarem@gmail.com>"]
 
+[[bin]]
+name = "unpack"
+path = "src/unpack.rs"
+
+[[bin]]
+name = "repack"
+path = "src/repack.rs"
+
 [dependencies]
 nom = "3.2"
 csv = "1.0.0-beta.5"
